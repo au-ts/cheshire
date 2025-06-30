@@ -26,6 +26,8 @@ CHS_LLC_DIR   := $(shell $(BENDER) path axi_llc)
 
 # Define paths used in dependencies
 OTPROOT           := $(shell $(BENDER) path opentitan_peripherals)
+APBTIMER_ROOT     := $(shell $(BENDER) path apb_timer)
+APB_ROOT          := $(shell $(BENDER) path apb)
 CLINTROOT         := $(shell $(BENDER) path clint)
 AXIRTROOT         := $(shell $(BENDER) path axi_rt)
 AXI_VGA_ROOT      := $(shell $(BENDER) path axi_vga)

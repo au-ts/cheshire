@@ -138,6 +138,7 @@ package cheshire_pkg;
     bit     Clic;
     bit     IrqRouter;
     bit     BusErr;
+    bit     Timer;
     // Parameters for Debug Module
     jtag_idcode_t DbgIdCode;
     dw_bt   DbgMaxReqs;
@@ -217,7 +218,11 @@ package cheshire_pkg;
   // Defined interrupts
   typedef struct packed {
     cheshire_bus_err_intr_t bus_err;
-    logic [31:0] gpio;
+    logic [31:0] gpio;  // Currently unused, not in DTS!
+    logic timer1_cmp;
+    logic timer1_overflow;
+    logic timer0_cmp;
+    logic timer0_overflow;
     logic usb;
     logic spih_spi_event;
     logic spih_error;
@@ -394,6 +399,7 @@ package cheshire_pkg;
     aw_bt slink;
     aw_bt vga;
     aw_bt usb;
+    aw_bt timer;
     aw_bt axirt;
     aw_bt irq_router;
     aw_bt [2**MaxCoresWidth-1:0] bus_err;
@@ -419,6 +425,7 @@ package cheshire_pkg;
     if (cfg.SerialLink)   begin i++; ret.slink      = i; r++; ret.map[r] = '{i, AmSlink, AmSlink +'h1000}; end
     if (cfg.Vga)          begin i++; ret.vga        = i; r++; ret.map[r] = '{i, 'h0300_7000, 'h0300_8000}; end
     if (cfg.Usb)          begin i++; ret.usb        = i; r++; ret.map[r] = '{i, 'h0300_8000, 'h0300_9000}; end
+    if (cfg.Timer)        begin i++; ret.timer      = i; r++; ret.map[r] = '{i, 'h0300_B000, 'h0300_C000}; end
     if (cfg.IrqRouter)    begin i++; ret.irq_router = i; r++; ret.map[r] = '{i, 'h0208_0000, 'h020c_0000}; end
     if (cfg.AxiRt)        begin i++; ret.axirt      = i; r++; ret.map[r] = '{i, 'h020c_0000, 'h0210_0000}; end
     if (cfg.Clic) for (int j = 0; j < cfg.NumCores; j++) begin
@@ -612,6 +619,7 @@ package cheshire_pkg;
     Clic              : 0,
     IrqRouter         : 0,
     BusErr            : 1,
+    Timer             : 1,
     // Debug
     DbgIdCode         : CheshireIdCode,
     DbgMaxReqs        : 4,

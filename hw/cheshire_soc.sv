@@ -109,12 +109,19 @@ module cheshire_soc import cheshire_pkg::*; #(
 );
 
   `include "axi/typedef.svh"
+  `include "apb/typedef.svh"
   `include "common_cells/registers.svh"
   `include "common_cells/assertions.svh"
   `include "cheshire/typedef.svh"
 
   // Declare interface types internally
   `CHESHIRE_TYPEDEF_ALL(, Cfg)
+
+  // Includes for APB (for timer)
+  `APB_TYPEDEF_REQ_T(apb_req_t, logic [31:0], logic [31:0], logic [3:0])
+
+  `APB_TYPEDEF_RESP_T(apb_rsp_t, logic [31:0])
+  import apb_pkg::*;
 
   //////////////////
   //  Interrupts  //
@@ -1009,7 +1016,8 @@ module cheshire_soc import cheshire_pkg::*; #(
       axirt       : Cfg.AxiRt,
       clic        : Cfg.Clic,
       irq_router  : Cfg.IrqRouter,
-      bus_err     : Cfg.BusErr
+      bus_err     : Cfg.BusErr,
+      timer       : Cfg.Timer
     },
     llc_size      : get_llc_size(Cfg),
     vga_params    : '{
@@ -1336,6 +1344,51 @@ module cheshire_soc import cheshire_pkg::*; #(
     assign intr.intn.spih_spi_event  = 0;
 
   end
+
+  /////////////
+  //  Timer  //
+  /////////////
+
+  if (Cfg.Timer) begin : gen_timer
+    // raw apb wires
+    apb_req_t       apb_req;
+    apb_rsp_t       apb_rsp;
+
+    reg_to_apb #(
+        .reg_req_t ( reg_req_t ),
+        .reg_rsp_t ( reg_rsp_t ),
+        .apb_req_t ( apb_req_t ),
+        .apb_rsp_t ( apb_rsp_t )
+    ) timer_adaptor (
+        .clk_i,
+        .rst_ni     ( ndmreset_n ),
+        .reg_req_i  ( reg_out_req[RegOut.timer] ),
+        .reg_rsp_o  ( reg_out_rsp[RegOut.timer] ),
+        .apb_req_o  ( apb_req ),
+        .apb_rsp_i  ( apb_rsp )
+    );
+
+    apb_timer #(
+            .APB_ADDR_WIDTH ( 32 ),
+            .TIMER_CNT      ( 2  )
+    ) i_timer (
+        .HCLK    ( clk_i            ),
+        .HRESETn ( ndmreset_n         ),
+        .PSEL    ( apb_req.psel       ),
+        .PENABLE ( apb_req.penable    ),
+        .PWRITE  ( apb_req.pwrite     ),
+        .PADDR   ( apb_req.paddr      ),
+        .PWDATA  ( apb_req.pwdata     ),
+        .PRDATA  ( apb_rsp.prdata     ),
+        .PREADY  ( apb_rsp.pready     ),
+        .PSLVERR ( apb_rsp.pslverr    ),
+        .irq_o   (  { intr.intn.timer1_cmp, intr.intn.timer1_overflow,
+                     intr.intn.timer0_cmp, intr.intn.timer0_overflow} )
+    );
+
+  end else begin : gen_no_timer
+  end
+
 
   ////////////
   //  GPIO  //
