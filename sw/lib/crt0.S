@@ -178,6 +178,3 @@ _trap_handler_wrap:
 .global trap_vector
 .weak trap_vector
 .align 4
-trap_vector:
-    wfi
-    j trap_vector

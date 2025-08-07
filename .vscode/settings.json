@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        ".fantomasignore": "ignore",
+        "*.tpp": "cpp",
+        "compare": "c",
+        "printf.h": "c",
+        "stdint.h": "c",
+        "stddef.h": "c"
+    }
+}
