@@ -716,8 +716,13 @@ int main(void) {
         }
     }
 
-    // Initial prime
-    spy(0);
+    /* Warmup spy+trojan rounds */
+    for (uint32_t i = 0; i < 100; i++) {
+        trojan();
+        domain_switch();
+        spy(0);
+        domain_switch();
+    }
 
     for (uint32_t round = 0; round < DATA_POINTS; round++) {
         if (round % 1000 == 0) {
