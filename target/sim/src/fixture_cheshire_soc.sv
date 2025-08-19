@@ -63,6 +63,8 @@ module fixture_cheshire_soc #(
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o;
 
+  rvfi_t [DutCfg.NumCores-1:0] rvfi;
+
   cheshire_soc #(
     .Cfg                ( DutCfg ),
     .ExtHartinfo        ( '0 ),
@@ -73,7 +75,8 @@ module fixture_cheshire_soc #(
     .axi_ext_slv_req_t  ( axi_slv_req_t ),
     .axi_ext_slv_rsp_t  ( axi_slv_rsp_t ),
     .reg_ext_req_t      ( reg_req_t ),
-    .reg_ext_rsp_t      ( reg_rsp_t )
+    .reg_ext_rsp_t      ( reg_rsp_t ),
+    .rvfi_ext_t         ( rvfi_t )
   ) dut (
     .clk_i              ( clk       ),
     .rst_ni             ( rst_n     ),
@@ -144,7 +147,8 @@ module fixture_cheshire_soc #(
     .usb_dp_o           ( ),
     .usb_dp_oe_o        ( ),
     .cva6_sram_impl_i   ( '0 ),
-    .llc_sram_impl_i    ( '0 )
+    .llc_sram_impl_i    ( '0 ),
+    .rvfi_o             ( rvfi )
   );
 
   ////////////////////////
@@ -175,7 +179,8 @@ module fixture_cheshire_soc #(
     .axi_ext_llc_req_t ( axi_llc_req_t ),
     .axi_ext_llc_rsp_t ( axi_llc_rsp_t ),
     .axi_ext_mst_req_t ( axi_mst_req_t ),
-    .axi_ext_mst_rsp_t ( axi_mst_rsp_t )
+    .axi_ext_mst_rsp_t ( axi_mst_rsp_t ),
+    .rvfi_ext_t        ( rvfi_t )
   ) vip (.*);
 
 endmodule
