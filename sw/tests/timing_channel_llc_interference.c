@@ -251,8 +251,10 @@ int setup_dpllc() {
     /* 16 regions. (=MAXPARTITION) */
 #define TAGGER_NUM_REGIONS LLC_MAXPARTITION
 /* I think this is right? */
-// ySE: xilinx/build/cheshire.genesys2.log:1718:        Parameter PATID_LEN bound to: 32'b00000000000000000000000000000101
+// wrong: xilinx/build/cheshire.genesys2.log:1718:        Parameter PATID_LEN bound to: 32'b00000000000000000000000000000101
 // Nils: This *should* be log2(LLC_MAXPARTITION)
+// New builds: nw-cheshire/target/xilinx/build/cheshire.genesys2.log
+//             1943:   Parameter PATID_LEN bound to: 32'b00000000000000000000000000000100
 #define TAGGER_PATID_LEN 4
     // static const uint32_t TAGGER_NUM_REGIONS = 16;
 
