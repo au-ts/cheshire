@@ -25,7 +25,7 @@
 
 #define MITIGATION          MITIGATION_DPLLC
 
-#define DATA_POINTS 73728
+#define DATA_POINTS 65536
 
 #define SPY_COLOUR      0
 #define TROJAN_COLOUR   1
@@ -160,6 +160,8 @@ for (uint32_t line = 0; line < LLC_WAY_NUM_LINES; line++)  {
 
 void domain_switch(void) {
     fencet();
+
+    *reg32(&__base_llc, AXI_LLC_COMMIT_CFG_REG_OFFSET) = BIT(AXI_LLC_COMMIT_CFG_COMMIT_BIT);
 
     // This should remove the channel.
     // evict_llc();
