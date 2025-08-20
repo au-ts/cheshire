@@ -673,13 +673,17 @@ package cheshire_pkg;
     LlcAmoPostCut     : 1,
     LlcOutConnect     : 1,
     LlcOutRegionStart : 'h8000_0000,
-    LlcOutRegionEnd   : 64'h8010_0000,
+    // LlcOutRegionEnd   : 64'h8010_0000,
+    LlcOutRegionEnd   : 64'h1_0000_0000,
     LlcUserMsb        : 5,
     LlcUserLsb        : 2,
     LlcCachePartition : 1,
     LlcMaxPartition   : 16,
     LlcRemapHash      : axi_llc_pkg::Modulo,
-    MainMemUseSRAM    : 1,
+
+    // IMPORTANT: If changing this, also change LlcOutRegionEnd
+    MainMemUseSRAM    : 0,
+
     // VGA: RGB565
     VgaRedWidth       : 5,
     VgaGreenWidth     : 6,
