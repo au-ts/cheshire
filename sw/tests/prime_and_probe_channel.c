@@ -8,21 +8,8 @@
 #include <stdint.h>
 
 #include "memory_management/prime_and_probe_symbols.h"
-#include "memory_management/riscv_vm.h"
 #include "memory_management/frame_alloc.h"
 #include "llc_tests.h"
-
-struct satp { uint64_t words[1]; };
-typedef struct satp satp_t;
-static inline satp_t satp_new(uint64_t mode, uint64_t asid, uint64_t ppn) {
-    satp_t satp;
-    satp.words[0] = 0
-        | (mode & 0xfull) << 60
-        | (asid & 0xffffull) << 44
-        | (ppn & 0xfffffffffffull) << 0;
-
-    return satp;
-}
 
 #define DATA_POINTS 8192
 
@@ -32,7 +19,6 @@ volatile result_t results[DATA_POINTS] SECTION(".results");
 static inline void fencet(void) { asm volatile (".word 0xfffff00b" ::: "memory"); }
 static inline void sfence(void) { asm volatile("sfence.vma" ::: "memory"); }
 static inline void ifence(void) { asm volatile("fence.i" ::: "memory"); }
-
 
 void touch_cache_trampling_buffer(volatile char* pages[8], int num_sets) {
     volatile char rv = 0xFF;
@@ -46,15 +32,12 @@ void touch_cache_trampling_buffer(volatile char* pages[8], int num_sets) {
     }
 }
 
-
 static inline void init_cache_trampling_buffer(volatile char** trampling_buffer, uint32_t colour) {
     for (uint32_t i = 0; i < 8; i++) {
         trampling_buffer[i] = (volatile char*) allocate_frame(colour);
     }
 }
 
-
-// We jump to this function after entering supervisor mode
 int main_continued(void) {
     volatile char* priming_buffer[8];
     volatile char* probing_buffer[8];
@@ -105,6 +88,21 @@ int main_continued(void) {
 }
 
 
+void verify_range(uintptr_t start, uintptr_t end, uint32_t* expected_colours) {
+    for (uintptr_t addr = start; addr < end; addr += PAGE_SIZE) {
+        bool valid_colour = expected_colours == 0 || page_colour(addr) == expected_colours[0] || 
+                            page_colour(addr) == expected_colours[1];
+
+        if (!valid_colour) {
+            printf("Error: Mapped address 0x%lx does not lie in expected colours %d and %d, it lies in colour %d\r\n", addr, expected_colours[0], expected_colours[1], page_colour(addr));
+            while (1) {
+                // Infinite loop to halt execution
+            }
+        }
+    }
+}
+
+
 void trap_vector() {
     uint64_t mcause, mepc, mip, mie, mstatus, mtval, satp;
     asm volatile(
@@ -123,52 +121,19 @@ void trap_vector() {
 
 
 int main(void) {
-    uint32_t stack_start = 0;
     *reg32(&__base_llc, AXI_LLC_CFG_SPM_LOW_REG_OFFSET) = 0b00000000;
     *reg32(&__base_llc, AXI_LLC_COMMIT_CFG_REG_OFFSET) = (1U << AXI_LLC_COMMIT_CFG_COMMIT_BIT);
 
-    printf("Stack starts at %p\r\n", (void*)&__stack_start);
-    printf("Stack ends at %p\r\n", (void*)&__stack_end);
-    printf("Observed stack start: %p\r\n", (void*)&stack_start);
-    printf("Main starts at %p\r\n", (void*)main_continued);
-    printf("Prime buffer starts at %p\r\n", (void*)&__prime_buffer_start);
-    printf("Probe buffer starts at %p\r\n", (void*)&__probe_buffer_start);
+    // Verify that everything lies in the correct colours
+    uint32_t expected_colours[2] = { 0, 1 };
+    verify_range((uintptr_t)&__text_start, (uintptr_t)&__text_end, expected_colours);
+    verify_range((uintptr_t)&__stack_end, (uintptr_t)&__stack_start, expected_colours);
+    verify_range((uintptr_t)&__base_uart, (uintptr_t)&__base_uart + PAGE_SIZE, NULL);
+    verify_range((uintptr_t)&__base_llc, (uintptr_t)&__base_llc + PAGE_SIZE, NULL);
+    verify_range((uintptr_t)&__misc_start, (uintptr_t)&__misc_end, expected_colours);
+    verify_range((uintptr_t)&__bss_start, (uintptr_t)&__bss_end, expected_colours);
+    verify_range((uintptr_t)&__results_start, (uintptr_t)&__results_end, NULL);
 
-    // Allocate a root page table
-    // PageTable* root_page_table = RootPageTable(allocate_colour_1_frame());
-
-    // uint32_t expected_colours[2] = { 0, 1 };
-
-    // Identity map all the important regions to us
-    // identity_map_range(root_page_table, (uintptr_t)&__text_start, (uintptr_t)&__text_end, true, expected_colours);
-    // identity_map_range(root_page_table, (uintptr_t)&__stack_end, (uintptr_t)&__stack_start, false, expected_colours);
-    // identity_map_range(root_page_table, (uintptr_t)&__base_uart, (uintptr_t)&__base_uart + PAGE_SIZE, false, NULL);
-    // identity_map_range(root_page_table, (uintptr_t)&__base_llc, (uintptr_t)&__base_llc + PAGE_SIZE, false, NULL);
-    // identity_map_range(root_page_table, (uintptr_t)&__misc_start, (uintptr_t)&__misc_end, false, expected_colours);
-    // identity_map_range(root_page_table, (uintptr_t)&__bss_start, (uintptr_t)&__bss_end, false, expected_colours);
-    // identity_map_range(root_page_table, (uintptr_t)&__results_start, (uintptr_t)&__results_end, false, NULL);
-
-    // Allocate the prime and probe buffers
-    // allocate_buffer_with_colour(root_page_table, (uintptr_t)&__prime_buffer_start, LLC_ASSOCIATIVITY, 2);
-    // allocate_buffer_with_colour(root_page_table, (uintptr_t)&__probe_buffer_start, LLC_ASSOCIATIVITY, 3);
-
-    printf("Completed mapping!\r\n");
-
-    // Write out the root page table to the SATP register
-    // asm volatile("sfence.vma" ::: "memory");
-    // uint64_t root_ppn = ((uintptr_t)root_page_table >> 12);
-
-    // // Read the satp value
-    // volatile uint64_t satp_value;
-    // asm volatile("csrr %0, satp" : "=r"(satp_value));
-
-    // printf("Setting satp %llu\r\n", satp_value);
-
-    // __asm__ volatile("mv sp, %0" :: "r" (&stack_start));
-    // asm volatile("csrw satp, %0" :: "rK"(satp_new(8, 0, root_ppn).words[0]) : "memory");
-    // asm volatile("sfence.vma" ::: "memory");
-
-    // printf("Running with virtual memory enabled!\r\n");
     main_continued();
     return 0;
 }
