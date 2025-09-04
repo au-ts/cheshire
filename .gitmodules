@@ -6,3 +6,8 @@
 	path = sw/deps/cva6-sdk
 	url = https://github.com/pulp-platform/cva6-sdk.git
 	ignore = dirty
+[submodule "opensbi"]
+	path = opensbi
+	url = https://github.com/Varun-Sethu/opensbi
+	branch = opensbi_llc_channel
+	ignore = dirty
