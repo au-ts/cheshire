@@ -10,7 +10,6 @@
 #include "memory_management/prime_and_probe_symbols.h"
 #include "memory_management/riscv_vm.h"
 #include "memory_management/frame_alloc.h"
-#include "memory_management/sbi_put_char.h"
 #include "llc_tests.h"
 
 struct satp { uint64_t words[1]; };
@@ -169,12 +168,7 @@ int main(void) {
     asm volatile("csrw satp, %0" :: "rK"(satp_new(8, 0, root_ppn).words[0]) : "memory");
     asm volatile("sfence.vma" ::: "memory");
 
-    legacy_sbi_putchar('D');
-    legacy_sbi_putchar('O');
-    legacy_sbi_putchar('N');
-    legacy_sbi_putchar('E');
-    legacy_sbi_putchar('\n');
-
+    printf("Running with virtual memory enabled!\r\n");
     main_continued();
     return 0;
 }
