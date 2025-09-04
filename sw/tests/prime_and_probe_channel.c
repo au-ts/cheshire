@@ -47,9 +47,9 @@ void touch_cache_trampling_buffer(volatile char* pages[8], int num_sets) {
 }
 
 
-static inline void init_cache_trampling_buffer(uintptr_t memory, volatile char** trampling_buffer) {
+static inline void init_cache_trampling_buffer(volatile char** trampling_buffer, uint32_t colour) {
     for (uint32_t i = 0; i < 8; i++) {
-        trampling_buffer[i] = (volatile char*)(memory + i * PAGE_SIZE);
+        trampling_buffer[i] = (volatile char*) allocate_frame(colour);
     }
 }
 
@@ -59,8 +59,8 @@ int main_continued(void) {
     volatile char* priming_buffer[8];
     volatile char* probing_buffer[8];
 
-    init_cache_trampling_buffer((uintptr_t)&__prime_buffer_start, priming_buffer);
-    init_cache_trampling_buffer((uintptr_t)&__probe_buffer_start, probing_buffer);
+    init_cache_trampling_buffer(priming_buffer, 2);
+    init_cache_trampling_buffer(probing_buffer, 3);
 
     for (int way = 0; way < 8; way++) { printf("Priming buffer way %d starts at %p\r\n", way, (void*)priming_buffer[way]); }
     for (int way = 0; way < 8; way++) { printf("Probing buffer way %d starts at %p\r\n", way, (void*)probing_buffer[way]); }
@@ -135,40 +135,40 @@ int main(void) {
     printf("Probe buffer starts at %p\r\n", (void*)&__probe_buffer_start);
 
     // Allocate a root page table
-    PageTable* root_page_table = RootPageTable(allocate_colour_1_frame());
+    // PageTable* root_page_table = RootPageTable(allocate_colour_1_frame());
 
-    uint32_t expected_colours[2] = { 0, 1 };
+    // uint32_t expected_colours[2] = { 0, 1 };
 
     // Identity map all the important regions to us
-    identity_map_range(root_page_table, (uintptr_t)&__text_start, (uintptr_t)&__text_end, true, expected_colours);
-    identity_map_range(root_page_table, (uintptr_t)&__stack_end, (uintptr_t)&__stack_start, false, expected_colours);
-    identity_map_range(root_page_table, (uintptr_t)&__base_uart, (uintptr_t)&__base_uart + PAGE_SIZE, false, NULL);
-    identity_map_range(root_page_table, (uintptr_t)&__base_llc, (uintptr_t)&__base_llc + PAGE_SIZE, false, NULL);
-    identity_map_range(root_page_table, (uintptr_t)&__misc_start, (uintptr_t)&__misc_end, false, expected_colours);
-    identity_map_range(root_page_table, (uintptr_t)&__bss_start, (uintptr_t)&__bss_end, false, expected_colours);
-    identity_map_range(root_page_table, (uintptr_t)&__results_start, (uintptr_t)&__results_end, false, NULL);
+    // identity_map_range(root_page_table, (uintptr_t)&__text_start, (uintptr_t)&__text_end, true, expected_colours);
+    // identity_map_range(root_page_table, (uintptr_t)&__stack_end, (uintptr_t)&__stack_start, false, expected_colours);
+    // identity_map_range(root_page_table, (uintptr_t)&__base_uart, (uintptr_t)&__base_uart + PAGE_SIZE, false, NULL);
+    // identity_map_range(root_page_table, (uintptr_t)&__base_llc, (uintptr_t)&__base_llc + PAGE_SIZE, false, NULL);
+    // identity_map_range(root_page_table, (uintptr_t)&__misc_start, (uintptr_t)&__misc_end, false, expected_colours);
+    // identity_map_range(root_page_table, (uintptr_t)&__bss_start, (uintptr_t)&__bss_end, false, expected_colours);
+    // identity_map_range(root_page_table, (uintptr_t)&__results_start, (uintptr_t)&__results_end, false, NULL);
 
     // Allocate the prime and probe buffers
-    allocate_buffer_with_colour(root_page_table, (uintptr_t)&__prime_buffer_start, LLC_ASSOCIATIVITY, 2);
-    allocate_buffer_with_colour(root_page_table, (uintptr_t)&__probe_buffer_start, LLC_ASSOCIATIVITY, 3);
+    // allocate_buffer_with_colour(root_page_table, (uintptr_t)&__prime_buffer_start, LLC_ASSOCIATIVITY, 2);
+    // allocate_buffer_with_colour(root_page_table, (uintptr_t)&__probe_buffer_start, LLC_ASSOCIATIVITY, 3);
 
     printf("Completed mapping!\r\n");
 
     // Write out the root page table to the SATP register
-    asm volatile("sfence.vma" ::: "memory");
-    uint64_t root_ppn = ((uintptr_t)root_page_table >> 12);
+    // asm volatile("sfence.vma" ::: "memory");
+    // uint64_t root_ppn = ((uintptr_t)root_page_table >> 12);
 
-    // Read the satp value
-    volatile uint64_t satp_value;
-    asm volatile("csrr %0, satp" : "=r"(satp_value));
+    // // Read the satp value
+    // volatile uint64_t satp_value;
+    // asm volatile("csrr %0, satp" : "=r"(satp_value));
 
-    printf("Setting satp %llu\r\n", satp_value);
+    // printf("Setting satp %llu\r\n", satp_value);
 
-    __asm__ volatile("mv sp, %0" :: "r" (&stack_start));
-    asm volatile("csrw satp, %0" :: "rK"(satp_new(8, 0, root_ppn).words[0]) : "memory");
-    asm volatile("sfence.vma" ::: "memory");
+    // __asm__ volatile("mv sp, %0" :: "r" (&stack_start));
+    // asm volatile("csrw satp, %0" :: "rK"(satp_new(8, 0, root_ppn).words[0]) : "memory");
+    // asm volatile("sfence.vma" ::: "memory");
 
-    printf("Running with virtual memory enabled!\r\n");
+    // printf("Running with virtual memory enabled!\r\n");
     main_continued();
     return 0;
 }

@@ -53,6 +53,9 @@ SECTIONS {
     __results_end = .;
   } > dram
 
+  .dead_space_init : ALIGN(16K) {
+    . = . + 2 * 4K;
+  } > dram
 
   .prime_buffer : ALIGN(16K) {
     __prime_buffer_start = .;
