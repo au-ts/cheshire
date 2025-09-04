@@ -29,7 +29,6 @@ void* allocate_frame(uint32_t colour) {
         printf("Error: Allocated frame does not match requested colour...\r\n");
         printf("Frame address: %p, Colour: %d\r\n", frame, page_colour((uintptr_t)frame));
         while (1) {
-            // Infinite loop to halt execution
         }
     }
 
@@ -41,15 +40,26 @@ void* allocate_frame(uint32_t colour) {
     return (void*) frame;
 }
 
-void* allocate_colour_3_frame() {
-    void* frame = allocate_frame(3);
+void* allocate_colour_1_frame() {
+    void* frame = allocate_frame(1);
     return frame;
 }
 
 // Identity maps the range [start, end) into the page table
-void identity_map_range(PageTable* table, uintptr_t start, uintptr_t end, bool is_executable) {
+void identity_map_range(PageTable* table, uintptr_t start, uintptr_t end, bool is_executable, uint32_t* expected_colours) {
+    printf("Begining mapping\r\n");
     for (uintptr_t addr = start; addr < end; addr += PAGE_SIZE) {
-        map_page(table, addr, addr, is_executable, allocate_colour_3_frame);
+        map_page(table, addr, addr, is_executable, allocate_colour_1_frame);
+
+        bool valid_colour = expected_colours == 0 || page_colour(addr) == expected_colours[0] || 
+                            page_colour(addr) == expected_colours[1];
+
+        if (!valid_colour) {
+            printf("Error: Mapped address 0x%lx does not lie in expected colours %d and %d, it lies in colour %d\r\n", addr, expected_colours[0], expected_colours[1], page_colour(addr));
+            while (1) {
+                // Infinite loop to halt execution
+            }
+        }
     }
 }
 
@@ -60,7 +70,7 @@ void allocate_buffer_with_colour(PageTable* table, uintptr_t buffer_vaddr, size_
 
         printf("Allocating page at vaddr: 0x%lx, paddr: 0x%lx, colour: %d\r\n", vaddr, paddr, colour);
 
-        // Insert the page into the page table but use colour 3 for intermediate page tables
-        map_page(table, vaddr, paddr, false, allocate_colour_3_frame);
+        // Insert the page into the page table but use colour 1 for intermediate page tables
+        map_page(table, vaddr, paddr, false, allocate_colour_1_frame);
     }
 }

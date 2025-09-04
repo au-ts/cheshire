@@ -12,12 +12,7 @@
 .global _start
 .align 4
 _start:
-    // Globally disable Machine and Supervisor interrupts
-    csrrc x0, mstatus, 10
-
-    // Park SMP harts
-    csrr t0, mhartid
-    beqz t0, 2f
+    j 2f
 1:
     wfi
     j 1b
@@ -42,7 +37,7 @@ _start:
 
     // Set trap vector
     la t0, _trap_handler_wrap
-    csrrw x0, mtvec, t0
+    csrrw x0, stvec, t0
 
     // Zero the .bss section
     la t0, __bss_start      // t0 = bss start address
@@ -70,48 +65,6 @@ _zero_bss_rem:
     bgt t2, x0, _zero_bss_rem
 
 _fp_init:
-    // Set FS state to "Initial", enabling FP instructions
-    li t1, 1
-    slli t1, t1, 13
-    csrs mstatus, t1
-
-    // Clear all 32 double FP registers
-    fcvt.d.l f0, x0
-    fmv.d f1, f0
-    fmv.d f2, f0
-    fmv.d f3, f0
-    fmv.d f4, f0
-    fmv.d f5, f0
-    fmv.d f6, f0
-    fmv.d f7, f0
-    fmv.d f8, f0
-    fmv.d f9, f0
-    fmv.d f10, f0
-    fmv.d f11, f0
-    fmv.d f12, f0
-    fmv.d f13, f0
-    fmv.d f14, f0
-    fmv.d f15, f0
-    fmv.d f16, f0
-    fmv.d f17, f0
-    fmv.d f18, f0
-    fmv.d f19, f0
-    fmv.d f20, f0
-    fmv.d f21, f0
-    fmv.d f22, f0
-    fmv.d f23, f0
-    fmv.d f24, f0
-    fmv.d f25, f0
-    fmv.d f26, f0
-    fmv.d f27, f0
-    fmv.d f28, f0
-    fmv.d f29, f0
-    fmv.d f30, f0
-    fmv.d f31, f0
-
-    // Set FS state to "Clean"
-    csrrc x0, mstatus, t1
-
     // Full fence, then jump to main
     fence
     call main

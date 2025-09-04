@@ -9,28 +9,21 @@
 INCLUDE common.ldh
 
 SECTIONS {
-  __stack_start = ORIGIN(dram) + LENGTH(dram) - 0x1000; /* Bit of a hack but the stack starts at colour 0 (this moves it down to colour 3) */
+  __stack_start = ORIGIN(dram) + LENGTH(dram) - 0x2000; /* Bit of a hack but the stack starts at colour 0 (this moves it down to colour 3) */
   __stack_end   = __stack_start - 0x1000; /* Reserve 4KB for the stack (1 page) */
   __stack_pointer$  = __stack_start - 8;
-
-  .dummy : {
-    /* Dummy section to ensure the linker script is valid */
-    . = ALIGN(16K);
-    . = . + 8K;
-  } > dram
 
   .text : {
     __text_start = .;
     *(.text._start)
     *(.text)
     *(.text.*)
-    . = ALIGN(8K);
     __text_end = .;
   } > dram
 
   .dummy_text : { . = . + 8K; } > dram
 
-  .misc : {
+  .misc : ALIGN(4K) {
     __misc_start = .;
     *(.rodata)
     *(.rodata.*)
@@ -65,6 +58,10 @@ SECTIONS {
     __prime_buffer_start = .;
     . = . + 8 * 4K;
     __prime_buffer_end = .;
+  } > dram
+
+  .dead_space : ALIGN(16K) {
+    . = . + 4 * 4K;
   } > dram
 
   .probe_buffer : ALIGN(16K) {
